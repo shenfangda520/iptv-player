@@ -41,6 +41,7 @@ const CATEGORY_MAP = {
 };
 
 const DEFAULT_EMOJI = '📺';
+const DEFAULT_PLAYLIST_URL = 'https://iptv-org.github.io/iptv/index.m3u';
 
 let allChannels = [];
 let filteredChannels = [];
@@ -405,6 +406,10 @@ function init() {
   updateNowPlaying();
   updateCounts();
   switchView('categories');
+
+  if (allChannels.length === 0 && playlists.length === 0) {
+    loadPlaylistFromUrl(DEFAULT_PLAYLIST_URL).catch(() => {});
+  }
 
   document.getElementById('video-player').addEventListener('ended', () => {
     const idx = filteredChannels.findIndex(c => c.id === currentChannel?.id);

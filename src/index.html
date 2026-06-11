@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>IPTV Player</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script type="module" src="/main.js" defer></script>
+  </head>
+  <body>
+    <div id="app">
+      <aside id="sidebar">
+        <div class="sidebar-header">
+          <h1 class="app-title">📺 IPTV</h1>
+          <button id="btn-settings" class="icon-btn" title="设置">⚙️</button>
+        </div>
+
+        <div class="search-box">
+          <input type="text" id="search-input" placeholder="搜索频道..." />
+        </div>
+
+        <div class="playlist-section">
+          <div class="section-header">
+            <span>播放列表</span>
+            <button id="btn-add-playlist" class="icon-btn-sm" title="添加播放列表">＋</button>
+          </div>
+          <select id="playlist-select">
+            <option value="">选择播放列表</option>
+          </select>
+        </div>
+
+        <nav class="sidebar-nav">
+          <button class="nav-item active" data-view="all">
+            <span class="nav-icon">📋</span>全部频道
+            <span class="nav-count" id="count-all">0</span>
+          </button>
+          <button class="nav-item" data-view="favorites">
+            <span class="nav-icon">⭐</span>我的收藏
+            <span class="nav-count" id="count-fav">0</span>
+          </button>
+          <button class="nav-item" data-view="categories">
+            <span class="nav-icon">📂</span>分类浏览
+          </button>
+          <button class="nav-item" data-view="recent">
+            <span class="nav-icon">🕐</span>最近播放
+          </button>
+        </nav>
+
+        <div id="category-panel" class="category-panel hidden">
+          <div class="category-grid" id="category-grid"></div>
+        </div>
+
+        <div id="channel-panel" class="channel-panel">
+          <div id="channel-list" class="channel-list"></div>
+        </div>
+      </aside>
+
+      <main id="player-area">
+        <div id="video-container">
+          <video id="video-player" controls playsinline></video>
+          <div id="no-channel-placeholder">
+            <div class="placeholder-icon">📺</div>
+            <p>选择一个频道开始播放</p>
+            <p class="placeholder-hint">在左侧列表中选择频道，或先添加播放列表</p>
+          </div>
+        </div>
+        <div id="now-playing">
+          <span id="now-playing-name">未选择频道</span>
+          <div id="now-playing-controls">
+            <button id="btn-fav-toggle" class="icon-btn" title="收藏">☆</button>
+            <button id="btn-fullscreen" class="icon-btn" title="全屏">⛶</button>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <div id="settings-modal" class="modal hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>设置</h2>
+          <button class="modal-close" id="btn-close-settings">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="setting-group">
+            <label>添加播放列表 (M3U/M3U8 URL)</label>
+            <div class="input-row">
+              <input type="text" id="input-playlist-url" placeholder="https://example.com/playlist.m3u" />
+              <button id="btn-load-url" class="primary-btn">加载</button>
+            </div>
+          </div>
+          <div class="setting-group">
+            <label>导入本地文件</label>
+            <button id="btn-import-file" class="secondary-btn">选择文件</button>
+            <input type="file" id="file-input" accept=".m3u,.m3u8,.txt" style="display:none" />
+          </div>
+          <div class="setting-group">
+            <h3>已保存的播放列表</h3>
+            <div id="saved-playlists"></div>
+          </div>
+          <div class="setting-group">
+            <label>播放器设置</label>
+            <div class="setting-row">
+              <span>自动播放下一个</span>
+              <input type="checkbox" id="chk-autoplay" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="loading-overlay" class="hidden">
+      <div class="spinner"></div>
+      <p id="loading-text">加载中...</p>
+    </div>
+  </body>
+</html>

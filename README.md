@@ -80,9 +80,10 @@ npm run tauri android build
 
 ## 内置订阅源
 
-应用首次启动时自动加载以下订阅源：
+应用内置以下本地播放列表文件，首次启动无需在线拉取订阅源：
 
-- [iptv-org/iptv](https://iptv-org.github.io/iptv/index.m3u) — 全球 8000+ 免费电视频道
+- 国际频道 — `src/playlists/international.m3u`
+- 国内频道 — `src/playlists/domestic.m3u`
 
 也可以在设置中添加自定义 M3U/M3U8 播放列表。
 

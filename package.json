@@ -2,8 +2,16 @@
   "name": "iptv-player",
   "private": true,
   "version": "0.1.0",
+  "author": "shenfangda",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/shenfangda520/iptv-player.git"
+  },
+  "license": "MIT",
   "type": "module",
   "scripts": {
+    "dev": "tauri dev",
+    "build": "tauri build",
     "tauri": "tauri"
   },
   "devDependencies": {

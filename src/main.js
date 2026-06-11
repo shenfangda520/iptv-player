@@ -376,6 +376,18 @@ function toggleSidebar(force) {
   if (!isMobile()) saveStorage(STORAGE_KEY_SIDEBAR, collapsed);
 }
 
+function toggleFullscreen() {
+  const container = document.getElementById('video-container');
+  if (document.fullscreenElement) {
+    document.exitFullscreen();
+    return;
+  }
+  container.requestFullscreen().catch(() => {
+    const video = document.getElementById('video-player');
+    if (video.webkitEnterFullscreen) video.webkitEnterFullscreen();
+  });
+}
+
 function playChannel(channel) {
   currentChannel = channel;
   const video = document.getElementById('video-player');
@@ -836,9 +848,12 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.getElementById('btn-fullscreen').addEventListener('click', () => {
-    const container = document.getElementById('video-container');
-    if (document.fullscreenElement) document.exitFullscreen();
-    else container.requestFullscreen().catch(() => {});
+    toggleFullscreen();
+  });
+  document.getElementById('btn-video-fullscreen').addEventListener('click', toggleFullscreen);
+  document.getElementById('video-container').addEventListener('dblclick', (e) => {
+    if (e.target.closest('button')) return;
+    toggleFullscreen();
   });
 
   document.getElementById('btn-add-playlist').addEventListener('click', openSettingsModal);
@@ -859,6 +874,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.key === 'Escape') {
       document.getElementById('settings-modal').classList.add('hidden');
       if (document.fullscreenElement) document.exitFullscreen();
+    }
+    if (e.key.toLowerCase() === 'f' && document.activeElement.tagName !== 'INPUT') {
+      e.preventDefault();
+      toggleFullscreen();
     }
     if (e.key === ' ' && document.activeElement.tagName !== 'INPUT') {
       e.preventDefault();

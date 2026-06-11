@@ -8,6 +8,9 @@ on:
 permissions:
   contents: write
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build-desktop:
     strategy:
@@ -100,29 +103,57 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install Android NDK
+      - name: Install Android SDK packages
         run: |
-          sdkmanager --install "ndk;27.0.12077973"
+          yes | sdkmanager --licenses
+          sdkmanager --install \
+            "platform-tools" \
+            "platforms;android-36" \
+            "build-tools;36.0.0" \
+            "cmake;3.22.1" \
+            "ndk;27.0.12077973"
           echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/27.0.12077973" >> $GITHUB_ENV
+          echo "ANDROID_NDK_ROOT=$ANDROID_HOME/ndk/27.0.12077973" >> $GITHUB_ENV
+          echo "NDK_HOME=$ANDROID_HOME/ndk/27.0.12077973" >> $GITHUB_ENV
 
       - name: Install frontend dependencies
         run: npm ci
 
-      - name: Init Android project
-        run: npx tauri android init
-
       - name: Build Android APK
-        run: npx tauri android build --apk --ci
+        run: npx tauri android build --apk --ci --target aarch64
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
+
+      - name: Sign Android APK
+        run: |
+          keytool -genkeypair \
+            -keystore /tmp/iptv-release.keystore \
+            -storepass iptvplayer \
+            -keypass iptvplayer \
+            -alias iptv \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -dname "CN=shenfangda, OU=IPTV, O=shenfangda, L=Shanghai, S=Shanghai, C=CN"
+          unsigned_apk="$(find src-tauri/gen/android/app/build/outputs/apk -name '*-unsigned.apk' | head -n 1)"
+          aligned_apk="${unsigned_apk%-unsigned.apk}-aligned.apk"
+          signed_apk="${unsigned_apk%-unsigned.apk}-signed.apk"
+          "$ANDROID_HOME/build-tools/36.0.0/zipalign" -p -f 4 "$unsigned_apk" "$aligned_apk"
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" sign \
+            --ks /tmp/iptv-release.keystore \
+            --ks-key-alias iptv \
+            --ks-pass pass:iptvplayer \
+            --key-pass pass:iptvplayer \
+            --out "$signed_apk" \
+            "$aligned_apk"
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose "$signed_apk"
 
       - name: Upload Android artifacts
         uses: actions/upload-artifact@v4
         with:
           name: release-android
           path: |
-            src-tauri/gen/android/app/build/outputs/apk/**/*.apk
+            src-tauri/gen/android/app/build/outputs/apk/**/*-signed.apk
             src-tauri/gen/android/app/build/outputs/bundle/**/*.aab
           if-no-files-found: warn
 
@@ -131,7 +162,7 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           files: |
-            src-tauri/gen/android/app/build/outputs/apk/**/*.apk
+            src-tauri/gen/android/app/build/outputs/apk/**/*-signed.apk
             src-tauri/gen/android/app/build/outputs/bundle/**/*.aab
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

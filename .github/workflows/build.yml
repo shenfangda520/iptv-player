@@ -119,6 +119,34 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
+      - name: Ensure Android project
+        run: |
+          if [ ! -d "src-tauri/gen/android" ]; then
+            npx tauri android init --ci --skip-targets-install
+          fi
+
+      - name: Force Android landscape orientation
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          manifest = Path("src-tauri/gen/android/app/src/main/AndroidManifest.xml")
+          text = manifest.read_text()
+          activity = 'android:name=".MainActivity"'
+          orientation = 'android:screenOrientation="landscape"'
+          if orientation not in text:
+              text = text.replace(activity, f'{orientation}\n            {activity}')
+          manifest.write_text(text)
+          PY
+
+      - name: Tune Gradle memory
+        run: |
+          {
+            echo "org.gradle.jvmargs=-Xmx3g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8"
+            echo "org.gradle.workers.max=2"
+            echo "org.gradle.parallel=false"
+          } >> src-tauri/gen/android/gradle.properties
+
       - name: Build Android APK
         run: npx tauri android build --apk --ci --target aarch64
         env:

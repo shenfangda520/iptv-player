@@ -141,11 +141,14 @@ jobs:
 
       - name: Tune Gradle memory
         run: |
-          {
-            echo "org.gradle.jvmargs=-Xmx3g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8"
-            echo "org.gradle.workers.max=2"
-            echo "org.gradle.parallel=false"
-          } >> src-tauri/gen/android/gradle.properties
+          PROPS="src-tauri/gen/android/gradle.properties"
+          # Ensure trailing newline before appending
+          [ -n "$(tail -c1 "$PROPS")" ] && echo >> "$PROPS"
+          cat >> "$PROPS" <<'EOF'
+          org.gradle.jvmargs=-Xmx3g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8
+          org.gradle.workers.max=2
+          org.gradle.parallel=false
+          EOF
 
       - name: Build Android APK
         run: npx tauri android build --apk --ci --target aarch64

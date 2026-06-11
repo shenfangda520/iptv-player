@@ -1,129 +1,172 @@
 <div align="center">
 
+<img src="src-tauri/icons/icon.png" width="100" alt="Logo">
+
 # IPTV Player
 
-**轻量级跨平台 IPTV 播放器**
+**A lightweight, cross-platform IPTV player built with Tauri 2**
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Tauri](https://img.shields.io/badge/Tauri-2.x-green.svg)](https://tauri.app)
-[![Rust](https://img.shields.io/badge/Rust-2021-orange.svg)](https://rust-lang.org)
-[![Platform](https://img.shields.io/badge/Platform-macOS%20%7C%20Windows%20%7C%20Android-lightgrey.svg)]()
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
+[![Tauri 2](https://img.shields.io/badge/Tauri-2.x-orange.svg?style=flat-square)](https://tauri.app)
+[![Rust](https://img.shields.io/badge/Rust-stable-black.svg?style=flat-square)](https://rust-lang.org)
+[![Release](https://img.shields.io/github/v/release/shenfangda520/iptv-player?style=flat-square&color=green)](https://github.com/shenfangda520/iptv-player/releases)
 
-[下载安装包](https://github.com/shenfangda520/iptv-player/releases) · [报告问题](https://github.com/shenfangda520/iptv-player/issues)
+[English](#features) · [中文](#功能特性)
+
+[Download](https://github.com/shenfangda520/iptv-player/releases) · [Report Bug](https://github.com/shenfangda520/iptv-player/issues) · [Request Feature](https://github.com/shenfangda520/iptv-player/issues)
 
 </div>
 
 ---
 
-## 简介
+## Features
 
-IPTV Player 是一款基于 [Tauri 2](https://tauri.app/) 构建的轻量级 IPTV 流媒体播放器。前端使用原生 HTML/CSS/JS，后端使用 Rust，确保极致的性能和极小的安装包体积。
+IPTV Player is a modern, open-source IPTV client built with [Tauri 2](https://tauri.app/). It combines a Rust backend for performance with a lightweight HTML5 frontend, delivering a native desktop and mobile experience in under 5MB.
 
-内置 [iptv-org](https://iptv-org.github.io/iptv/) 订阅源，开箱即用，支持 8000+ 全球免费电视频道。
+Comes pre-loaded with [iptv-org](https://iptv-org.github.io/iptv/) — access **8,000+** free TV channels worldwide, no configuration needed.
+
+## Screenshots
+
+<div align="center">
+
+<!-- Add screenshots here -->
+
+</div>
+
+## Features
+
+| Feature | Description |
+|:-------:|:------------|
+| 📂 **Channel Browser** | Browse 30+ categories: News, Sports, Music, Movies, Kids, and more |
+| ⭐ **Favorites** | Bookmark channels for instant access |
+| 🕐 **Watch History** | Auto-saves your last 50 watched channels |
+| 🔍 **Instant Search** | Filter channels by name or category in real-time |
+| 📋 **Playlist Management** | Import M3U/M3U8 URLs or local files |
+| ▶️ **Smooth Playback** | HLS streaming powered by HTML5 Video |
+| 🌙 **Dark Theme** | Eye-friendly dark UI by default |
+| ⌨️ **Keyboard Shortcuts** | Space, Arrow keys, Esc — full control without mouse |
+| 📦 **Tiny Footprint** | ~5MB installer, launches in milliseconds |
 
 ## 功能特性
 
 | 功能 | 说明 |
-|------|------|
-| 📂 分类浏览 | 按新闻、音乐、体育、电影等 30+ 分类浏览频道 |
-| ⭐ 频道收藏 | 一键收藏常用频道，快速访问 |
-| 🕐 播放历史 | 自动记录最近播放，最多保存 50 条 |
-| 🔍 实时搜索 | 按频道名称、分组名称实时过滤 |
-| 📋 播放列表管理 | 支持 M3U/M3U8 URL 加载和本地文件导入 |
-| ▶️ 流媒体播放 | 基于 HTML5 Video，支持 HLS 流媒体 |
-| 🎨 暗色主题 | 默认深色 UI，护眼舒适 |
-| ⌨️ 快捷键 | 空格播放/暂停、↑↓切换频道、Esc退出全屏 |
-| 📦 极小体积 | 安装包约 5MB，启动秒开 |
+|:----:|:-----|
+| 📂 **分类浏览** | 按新闻、体育、音乐、电影等 30+ 分类浏览频道 |
+| ⭐ **频道收藏** | 一键收藏常用频道，快速访问 |
+| 🕐 **播放历史** | 自动记录最近播放，最多保存 50 条 |
+| 🔍 **实时搜索** | 按频道名称、分组名称实时过滤 |
+| 📋 **播放列表管理** | 支持 M3U/M3U8 URL 加载和本地文件导入 |
+| ▶️ **流畅播放** | 基于 HTML5 Video，支持 HLS 流媒体 |
+| 🌙 **暗色主题** | 默认深色 UI，护眼舒适 |
+| ⌨️ **快捷键** | 空格播放/暂停、↑↓切换频道、Esc退出全屏 |
+| 📦 **极小体积** | 安装包约 5MB，启动秒开 |
 
-## 截图
+## Download
 
-<div align="center">
+| Platform | Format | Requirements |
+|:--------:|:------:|:-------------|
+| <img src="https://img.shields.io/badge/-macOS-black?style=flat-square&logo=apple" width="100"> | `.dmg` | macOS 11+ (Apple Silicon) |
+| <img src="https://img.shields.io/badge/-Windows-blue?style=flat-square&logo=windows" width="100"> | `.exe` / `.msi` | Windows 10+ (x64) |
+| <img src="https://img.shields.io/badge/-Linux-yellow?style=flat-square&logo=linux" width="100"> | `.deb` / `.AppImage` | Ubuntu 20.04+ / Most distros |
+| <img src="https://img.shields.io/badge/-Android-green?style=flat-square&logo=android" width="100"> | `.apk` | Android 7.0+ (API 24) |
 
-<!-- ![Screenshot](docs/screenshot.png) -->
+⬇️ **[Download Latest Release](https://github.com/shenfangda520/iptv-player/releases/latest)**
 
-</div>
+## Build from Source
 
-## 下载安装
-
-前往 [Releases](https://github.com/shenfangda520/iptv-player/releases) 页面下载最新版本：
-
-| 平台 | 格式 | 说明 |
-|------|------|------|
-| macOS | `.dmg` | Apple Silicon (M1/M2/M3/M4) |
-| Windows | `.msi` | Windows 10+ (x64) |
-| Android | `.apk` | Android 7.0+ (API 24) |
-
-### 从源码构建
-
-**环境要求**
+### Prerequisites
 
 - [Node.js](https://nodejs.org/) ≥ 18
 - [Rust](https://rustup.rs/) (stable)
 - [Tauri Prerequisites](https://tauri.app/start/prerequisites/)
 
-**Desktop**
+### Desktop
 
 ```bash
+# Clone the repository
 git clone https://github.com/shenfangda520/iptv-player.git
 cd iptv-player
-npm install
-npm run tauri dev      # 开发模式
-npm run tauri build    # 构建安装包
+
+# Install dependencies
+npm ci
+
+# Development
+npm run dev
+
+# Production build
+npm run build
 ```
 
-**Android**
+### Android
 
 ```bash
-npm run tauri android init
-npm run tauri android build
+# Initialize Android project
+npx tauri android init
+
+# Build APK
+npx tauri android build --apk
 ```
 
-## 内置订阅源
+## Preloaded Sources
 
-应用内置以下本地播放列表文件，首次启动无需在线拉取订阅源：
+The app ships with local playlist files — works offline, no setup required:
 
-- 国际频道 — `src/playlists/international.m3u`
-- 国内频道 — `src/playlists/domestic.m3u`
+| Source | File |
+|:------:|:----:|
+| International | `src/playlists/international.m3u` |
+| 国内频道 | `src/playlists/domestic.m3u` |
 
-也可以在设置中添加自定义 M3U/M3U8 播放列表。
+You can also add custom M3U/M3U8 URLs in-app.
 
-## 技术栈
+## Tech Stack
 
-| 层级 | 技术 |
-|------|------|
-| 前端 | HTML5 · CSS3 · Vanilla JavaScript |
-| 后端 | Rust · Tauri 2 |
-| 网络 | reqwest (HTTP 客户端) |
-| 播放 | HTML5 Video · HLS.js |
+| Layer | Technology |
+|:-----:|:-----------|
+| Frontend | HTML5 · CSS3 · Vanilla JavaScript |
+| Backend | Rust · Tauri 2 |
+| Networking | reqwest (HTTP client) |
+| Playback | HTML5 Video · HLS.js |
+| Build | GitHub Actions CI/CD |
 
-## 项目结构
+## Architecture
 
 ```
 iptv-player/
-├── src/                        # 前端资源
-│   ├── index.html              # 主页面
-│   ├── styles.css              # 样式
-│   └── main.js                 # 业务逻辑
-├── src-tauri/                  # Rust 后端
+├── src/                          # Frontend
+│   ├── index.html                # Entry point
+│   ├── styles.css                # Styles
+│   ├── main.js                   # Application logic
+│   └── playlists/                # Local M3U files
+├── src-tauri/                    # Rust backend
 │   ├── src/
-│   │   ├── lib.rs              # Tauri 命令定义
-│   │   └── main.rs             # 入口
-│   ├── Cargo.toml              # Rust 依赖
-│   ├── tauri.conf.json         # Tauri 配置
-│   └── capabilities/           # 权限配置
+│   │   └── lib.rs                # Tauri commands
+│   ├── Cargo.toml                # Rust dependencies
+│   ├── tauri.conf.json           # Tauri configuration
+│   └── capabilities/             # Permission config
+├── .github/
+│   └── workflows/
+│       └── build.yml             # CI/CD pipeline
 ├── package.json
 └── README.md
 ```
 
-## 快捷键
+## Keyboard Shortcuts
 
-| 按键 | 功能 |
-|------|------|
-| `Space` | 播放 / 暂停 |
-| `↑` | 上一个频道 |
-| `↓` | 下一个频道 |
-| `Esc` | 退出全屏 / 关闭弹窗 |
+| Key | Action |
+|:---:|:-------|
+| `Space` | Play / Pause |
+| `↑` | Previous channel |
+| `↓` | Next channel |
+| `Esc` | Exit fullscreen / Close modal |
 
-## 许可证
+## License
 
-[MIT License](LICENSE)
+[MIT License](LICENSE) © [shenfangda520](https://github.com/shenfangda520)
+
+---
+
+<div align="center">
+
+**If this project helps you, consider giving it a ⭐**
+
+</div>

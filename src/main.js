@@ -345,6 +345,35 @@ function updateNowPlaying() {
   }
 }
 
+function resetPlaylistRuntimeState({ clearPlayback = true, clearConnectivity = true } = {}) {
+  currentView = 'categories';
+  currentCategory = null;
+  filteredChannels = [];
+
+  const searchInput = document.getElementById('search-input');
+  if (searchInput) searchInput.value = '';
+
+  if (clearConnectivity) {
+    unreachableChannels = new Set();
+    lastConnectivityStats = null;
+    settings.lastConnectivityStats = null;
+    saveStorage(STORAGE_KEY_UNREACHABLE, []);
+    saveStorage(STORAGE_KEY_SETTINGS, settings);
+  }
+
+  if (clearPlayback) {
+    currentChannel = null;
+    const video = document.getElementById('video-player');
+    if (video) {
+      video.pause();
+      video.removeAttribute('src');
+      video.load();
+    }
+    saveStorage(STORAGE_KEY_CURRENT, null);
+    updateNowPlaying();
+  }
+}
+
 function switchView(view, category = null) {
   currentView = view;
   currentCategory = category;
@@ -732,6 +761,7 @@ async function loadPlaylistFromUrl(url) {
     }
     const channels = parseM3U(content);
     if (channels.length === 0) throw new Error('没有解析到可播放频道');
+    resetPlaylistRuntimeState();
     const id = url.hashCode();
     const existing = playlists.find(p => p.id === id);
     if (!existing) {
@@ -764,6 +794,7 @@ async function loadPlaylistFromFile(filePath) {
     const content = await readTextFile(filePath);
     const channels = parseM3U(content);
     if (channels.length === 0) throw new Error('没有解析到可播放频道');
+    resetPlaylistRuntimeState();
     const name = filePath.split(/[/\\]/).pop();
     const id = 'file-' + filePath.hashCode();
     const existing = playlists.find(p => p.id === id);
@@ -798,12 +829,16 @@ async function selectPlaylist(id) {
   else if (pl.path) await loadPlaylistFromFile(pl.path);
   else if (pl.content) {
     const channels = parseM3U(pl.content);
+    resetPlaylistRuntimeState();
     allChannels = channels;
     renderPlaylistSelect();
     updateCounts();
     switchView('categories');
     toast(`已加载 ${channels.length} 个频道`, 'success');
   }
+
+  document.getElementById('settings-modal')?.classList.add('hidden');
+  if (isMobile()) toggleSidebar(false);
 }
 
 function init() {

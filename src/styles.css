@@ -580,6 +580,7 @@ svg { display: block; }
     radial-gradient(1000px 500px at 70% -10%, rgba(99, 91, 255, 0.07), transparent 60%),
     radial-gradient(800px 400px at 20% 110%, rgba(198, 110, 245, 0.05), transparent 60%),
     #000;
+  overflow: hidden;
 }
 
 #video-container::after {
@@ -592,7 +593,13 @@ svg { display: block; }
     radial-gradient(900px 120px at 50% 100%, rgba(123, 135, 255, 0.07), transparent 70%);
 }
 
-#video-player { width: 100%; height: 100%; background: transparent; }
+#video-player {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+}
 
 /* ════════════════ Custom player UI ════════════════ */
 
@@ -963,6 +970,7 @@ svg { display: block; }
 #no-channel-placeholder {
   position: absolute;
   inset: 0;
+  z-index: 3;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1849,14 +1857,18 @@ svg { display: block; }
   #video-container {
     min-height: 0;
     background:
+      linear-gradient(180deg, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.56)),
+      url("assets/mobile-player-bg.svg") center / cover no-repeat,
       linear-gradient(180deg, rgba(16, 18, 28, 0.72), rgba(0, 0, 0, 0.96) 34%),
       radial-gradient(520px 220px at 50% 0%, rgba(123, 135, 255, 0.12), transparent 68%),
       #000;
   }
   #video-container::after {
+    z-index: 2;
     background:
       linear-gradient(to bottom, rgba(255, 255, 255, 0.025), transparent 18%),
-      linear-gradient(to top, rgba(0, 0, 0, 0.34), transparent 28%);
+      linear-gradient(to top, rgba(0, 0, 0, 0.46), transparent 32%),
+      radial-gradient(closest-side at 50% 50%, transparent 44%, rgba(0, 0, 0, 0.3));
   }
   #video-player {
     object-fit: contain;
@@ -1949,7 +1961,10 @@ svg { display: block; }
   #video-container {
     height: 100dvh;
     padding-top: 0;
-    background: #000;
+    background:
+      linear-gradient(90deg, rgba(0, 0, 0, 0.52), rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.52)),
+      url("assets/mobile-player-bg.svg") center / cover no-repeat,
+      #000;
   }
 
   #video-player {

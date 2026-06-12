@@ -74,6 +74,7 @@ let currentChannel = null;
 let settings = { autoplayNext: false, hideUnreachable: false };
 let unreachableChannels = new Set();
 let lastConnectivityStats = null;
+let nativeFullscreenActive = false;
 
 function loadStorage(key, fallback) {
   try {
@@ -276,9 +277,12 @@ function renderChannelList() {
 }
 
 function renderPlaylistSelect() {
-  const select = document.getElementById('playlist-select');
-  select.innerHTML = '<option value="">选择播放列表</option>' +
+  const html = '<option value="">选择播放列表</option>' +
     playlists.map(p => `<option value="${escapeHtml(p.id)}" ${p.id === currentPlaylist ? 'selected' : ''}>${escapeHtml(p.name)}</option>`).join('');
+  ['playlist-select', 'settings-playlist-select'].forEach(id => {
+    const select = document.getElementById(id);
+    if (select) select.innerHTML = html;
+  });
 }
 
 function renderSavedPlaylists() {
@@ -316,17 +320,27 @@ function updateNowPlaying() {
   const placeholder = document.getElementById('no-channel-placeholder');
   const bar = document.getElementById('now-playing');
 
+  const vc = document.getElementById('video-container');
+  const puName = document.getElementById('pu-title-name');
+  const puGroup = document.getElementById('pu-title-group');
+
   if (currentChannel) {
     nameEl.textContent = `${currentChannel.name} · ${currentChannel.groups.join(' / ')}`;
     if (mobileTitle) mobileTitle.textContent = currentChannel.name;
+    if (puName) puName.textContent = currentChannel.name;
+    if (puGroup) puGroup.textContent = currentChannel.groups.join(' / ');
     favBtn.classList.toggle('active', favorites.has(currentChannel.id));
     bar.classList.add('playing');
+    vc.classList.add('has-channel');
     placeholder.style.display = 'none';
   } else {
     nameEl.textContent = '未选择频道';
     if (mobileTitle) mobileTitle.textContent = '选择频道';
+    if (puName) puName.textContent = '未选择频道';
+    if (puGroup) puGroup.textContent = '';
     favBtn.classList.remove('active');
     bar.classList.remove('playing');
+    vc.classList.remove('has-channel', 'controls-on');
     placeholder.style.display = 'flex';
   }
 }
@@ -376,24 +390,155 @@ function toggleSidebar(force) {
   if (!isMobile()) saveStorage(STORAGE_KEY_SIDEBAR, collapsed);
 }
 
+/* ════════════════ Player controls (custom UI) ════════════════ */
+
+const CONTROLS_HIDE_DELAY = 2000;
+let controlsTimer = null;
+let lastPointerType = 'mouse';
+
+function clearControlsTimer() {
+  if (controlsTimer) {
+    window.clearTimeout(controlsTimer);
+    controlsTimer = null;
+  }
+}
+
+function showControls(autoHide = true) {
+  const vc = document.getElementById('video-container');
+  if (!vc.classList.contains('has-channel')) return;
+  vc.classList.add('controls-on');
+  clearControlsTimer();
+  const video = document.getElementById('video-player');
+  // 暂停时常驻显示，播放中 2 秒后自动隐藏
+  if (autoHide && !video.paused) {
+    controlsTimer = window.setTimeout(hideControls, CONTROLS_HIDE_DELAY);
+  }
+}
+
+function hideControls() {
+  clearControlsTimer();
+  document.getElementById('video-container').classList.remove('controls-on');
+}
+
+function setFullscreenMenu(open) {
+  const app = document.getElementById('app');
+  if (!app.classList.contains('app-fullscreen')) return;
+  app.classList.toggle('fullscreen-menu-open', open);
+  if (open && currentView !== 'categories' && allChannels.length > 0) switchView('categories');
+}
+
+function lockLandscape() {
+  try {
+    screen.orientation?.lock?.('landscape').catch(() => {});
+  } catch {}
+}
+
+function unlockOrientation() {
+  try { screen.orientation?.unlock?.(); } catch {}
+}
+
+function exitFullscreenMode() {
+  const app = document.getElementById('app');
+  app.classList.remove('app-fullscreen', 'fullscreen-menu-open');
+  nativeFullscreenActive = false;
+  unlockOrientation();
+  if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  showControls();
+}
+
 function toggleFullscreen() {
-  const container = document.getElementById('video-container');
-  if (document.fullscreenElement) {
-    document.exitFullscreen();
+  const app = document.getElementById('app');
+  if (document.fullscreenElement || app.classList.contains('app-fullscreen')) {
+    exitFullscreenMode();
     return;
   }
-  container.requestFullscreen().catch(() => {
-    const video = document.getElementById('video-player');
-    if (video.webkitEnterFullscreen) video.webkitEnterFullscreen();
+
+  app.classList.add('app-fullscreen');
+  if (isMobile()) {
+    toggleSidebar(true);
+    lockLandscape();
+  }
+  showControls();
+
+  const request = app.requestFullscreen?.bind(app) || app.webkitRequestFullscreen?.bind(app);
+  Promise.resolve(request ? request() : Promise.reject())
+    .then(() => { nativeFullscreenActive = true; })
+    .catch(() => { nativeFullscreenActive = false; });
+}
+
+/* ════════════════ Stream attach (hls.js fallback) ════════════════ */
+
+let hlsInstance = null;
+let triedHlsFallback = false;
+
+function destroyHls() {
+  if (hlsInstance) {
+    try { hlsInstance.destroy(); } catch {}
+    hlsInstance = null;
+  }
+}
+
+function startHls(url) {
+  const video = document.getElementById('video-player');
+  destroyHls();
+  triedHlsFallback = true;
+  hlsInstance = new Hls({
+    enableWorker: true,
+    lowLatencyMode: true,
+    backBufferLength: 30,
+    maxBufferLength: 20,
   });
+  hlsInstance.loadSource(url);
+  hlsInstance.attachMedia(video);
+  hlsInstance.on(Hls.Events.ERROR, (_evt, data) => {
+    if (!data.fatal) return;
+    if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+      hlsInstance.startLoad();
+    } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+      hlsInstance.recoverMediaError();
+    } else {
+      destroyHls();
+      onPlaybackFailed();
+    }
+  });
+  video.play().catch(() => {});
+}
+
+function attachStream(url) {
+  const video = document.getElementById('video-player');
+  destroyHls();
+  triedHlsFallback = false;
+
+  const isHlsUrl = /\.m3u8(\?|$)/i.test(url);
+  const canPlayNativeHls = video.canPlayType('application/vnd.apple.mpegurl');
+
+  if (isHlsUrl && !canPlayNativeHls && window.Hls?.isSupported()) {
+    startHls(url);
+    return;
+  }
+  video.src = url;
+  video.load();
+  video.play().catch(() => {});
+}
+
+function onPlaybackFailed() {
+  if (!currentChannel) return;
+  document.getElementById('now-playing-name').textContent = `播放失败: ${currentChannel.name}`;
+  document.getElementById('pu-buffering').classList.add('hidden');
+  toast('当前频道播放失败，请尝试其他源', 'error');
+}
+
+function stepChannel(delta) {
+  if (!filteredChannels.length) return;
+  const idx = filteredChannels.findIndex(c => c.id === currentChannel?.id);
+  const next = idx < 0 ? 0 : idx + delta;
+  if (next >= 0 && next < filteredChannels.length) playChannel(filteredChannels[next]);
 }
 
 function playChannel(channel) {
   currentChannel = channel;
-  const video = document.getElementById('video-player');
-  video.src = channel.url;
-  video.load();
-  video.play().catch(() => {});
+  document.getElementById('pu-buffering').classList.remove('hidden');
+  attachStream(channel.url);
 
   recentChannels = recentChannels.filter(r => r.id !== channel.id);
   recentChannels.unshift(channel);
@@ -405,6 +550,8 @@ function playChannel(channel) {
   saveStorage(STORAGE_KEY_CURRENT, channel);
 
   if (isMobile()) toggleSidebar(true);
+  setFullscreenMenu(false);
+  showControls();
 }
 
 function toggleFavorite(channelId) {
@@ -642,6 +789,23 @@ async function loadPlaylistFromFile(filePath) {
   }
 }
 
+async function selectPlaylist(id) {
+  if (!id) return;
+  const pl = playlists.find(p => p.id === id);
+  if (!pl) return;
+  currentPlaylist = id;
+  if (pl.url) await loadPlaylistFromUrl(pl.url);
+  else if (pl.path) await loadPlaylistFromFile(pl.path);
+  else if (pl.content) {
+    const channels = parseM3U(pl.content);
+    allChannels = channels;
+    renderPlaylistSelect();
+    updateCounts();
+    switchView('categories');
+    toast(`已加载 ${channels.length} 个频道`, 'success');
+  }
+}
+
 function init() {
   playlists = loadStorage(STORAGE_KEY_PLAYLISTS, []);
   ensureDefaultPlaylists();
@@ -664,22 +828,144 @@ function init() {
   switchView('categories');
 
   if (allChannels.length === 0) {
-    loadPlaylistFromUrl(DEFAULT_PLAYLISTS[0].url).catch(() => {});
+    loadPlaylistFromUrl(DEFAULT_PLAYLISTS[1].url).catch(() => {});
   }
 
-  document.getElementById('video-player').addEventListener('ended', () => {
-    if (!settings.autoplayNext) return;
-    const idx = filteredChannels.findIndex(c => c.id === currentChannel?.id);
-    if (idx >= 0 && idx < filteredChannels.length - 1) {
-      playChannel(filteredChannels[idx + 1]);
-    }
+  wirePlayerUI();
+}
+
+function formatTime(sec) {
+  if (!Number.isFinite(sec)) return '00:00';
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = Math.floor(sec % 60);
+  const mm = String(m).padStart(2, '0');
+  const ss = String(s).padStart(2, '0');
+  return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
+}
+
+function wirePlayerUI() {
+  const video = document.getElementById('video-player');
+  const vc = document.getElementById('video-container');
+  const buffering = document.getElementById('pu-buffering');
+  const liveBadge = document.getElementById('pu-live');
+  const seekRow = document.getElementById('pu-seek-row');
+  const seek = document.getElementById('pu-seek');
+  const timeCur = document.getElementById('pu-time-cur');
+  const timeDur = document.getElementById('pu-time-dur');
+  const volume = document.getElementById('pu-volume');
+  let seeking = false;
+
+  // ── 播放/暂停状态 ──
+  video.addEventListener('play', () => {
+    vc.classList.remove('is-paused');
+    showControls();
+  });
+  video.addEventListener('pause', () => {
+    vc.classList.add('is-paused');
+    showControls(false); // 暂停时控制栏常驻
   });
 
-  document.getElementById('video-player').addEventListener('error', () => {
-    if (currentChannel) {
-      document.getElementById('now-playing-name').textContent = `播放失败: ${currentChannel.name}`;
-      toast('当前频道播放失败，请尝试其他源', 'error');
+  // ── 缓冲指示 ──
+  video.addEventListener('waiting', () => buffering.classList.remove('hidden'));
+  video.addEventListener('playing', () => buffering.classList.add('hidden'));
+  video.addEventListener('canplay', () => buffering.classList.add('hidden'));
+
+  // ── 直播 / 点播识别 ──
+  video.addEventListener('durationchange', () => {
+    const isLive = !Number.isFinite(video.duration) || video.duration === 0;
+    liveBadge.classList.toggle('hidden', !isLive || !currentChannel);
+    seekRow.classList.toggle('hidden', isLive);
+    if (!isLive) timeDur.textContent = formatTime(video.duration);
+  });
+
+  video.addEventListener('timeupdate', () => {
+    if (seeking || !Number.isFinite(video.duration) || video.duration === 0) return;
+    seek.value = String(Math.round((video.currentTime / video.duration) * 1000));
+    timeCur.textContent = formatTime(video.currentTime);
+  });
+
+  seek.addEventListener('input', () => {
+    seeking = true;
+    if (Number.isFinite(video.duration)) {
+      timeCur.textContent = formatTime((Number(seek.value) / 1000) * video.duration);
     }
+  });
+  seek.addEventListener('change', () => {
+    if (Number.isFinite(video.duration)) {
+      video.currentTime = (Number(seek.value) / 1000) * video.duration;
+    }
+    seeking = false;
+    showControls();
+  });
+
+  // ── 音量 / 静音 ──
+  video.addEventListener('volumechange', () => {
+    vc.classList.toggle('is-muted', video.muted || video.volume === 0);
+    volume.value = String(Math.round((video.muted ? 0 : video.volume) * 100));
+  });
+  volume.addEventListener('input', () => {
+    video.volume = Number(volume.value) / 100;
+    video.muted = video.volume === 0;
+    showControls();
+  });
+
+  // ── 播放失败 → hls.js 降级 → 报错 ──
+  video.addEventListener('error', () => {
+    if (!currentChannel) return;
+    if (!triedHlsFallback && window.Hls?.isSupported()) {
+      startHls(currentChannel.url);
+      return;
+    }
+    onPlaybackFailed();
+  });
+
+  video.addEventListener('ended', () => {
+    if (!settings.autoplayNext) return;
+    stepChannel(1);
+  });
+
+  // ── 控制按钮 ──
+  document.getElementById('pu-play').addEventListener('click', () => {
+    if (video.paused) video.play().catch(() => {});
+    else video.pause();
+  });
+  document.getElementById('pu-prev').addEventListener('click', () => stepChannel(-1));
+  document.getElementById('pu-next').addEventListener('click', () => stepChannel(1));
+  document.getElementById('pu-mute').addEventListener('click', () => {
+    video.muted = !video.muted;
+    showControls();
+  });
+  document.getElementById('pu-fullscreen').addEventListener('click', toggleFullscreen);
+  document.getElementById('pu-back').addEventListener('click', exitFullscreenMode);
+  document.getElementById('pu-channels').addEventListener('click', () => {
+    const app = document.getElementById('app');
+    if (app.classList.contains('app-fullscreen')) setFullscreenMenu(true);
+    else toggleSidebar(false);
+  });
+
+  // 点击控制按钮时重置自动隐藏计时
+  vc.querySelectorAll('.pu-controls button').forEach(btn => {
+    btn.addEventListener('click', () => showControls());
+  });
+
+  // ── 点按视频区域：显示/隐藏控制栏 ──
+  vc.addEventListener('pointerdown', (e) => { lastPointerType = e.pointerType || 'mouse'; });
+  vc.addEventListener('click', (e) => {
+    if (e.target.closest('.pu-controls') || e.target.closest('#no-channel-placeholder')) return;
+    if (!vc.classList.contains('has-channel')) return;
+    if (vc.classList.contains('controls-on')) hideControls();
+    else showControls();
+  });
+
+  // 桌面：鼠标移动唤出，双击全屏
+  vc.addEventListener('pointermove', (e) => {
+    if (e.pointerType === 'mouse') showControls();
+  });
+  vc.addEventListener('dblclick', (e) => {
+    if (lastPointerType !== 'mouse') return;
+    if (e.target.closest('.pu-controls')) return;
+    toggleFullscreen();
   });
 }
 
@@ -723,27 +1009,15 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  document.getElementById('playlist-select').addEventListener('change', async (e) => {
-    const id = e.target.value;
-    if (!id) return;
-    const pl = playlists.find(p => p.id === id);
-    if (!pl) return;
-    currentPlaylist = id;
-    if (pl.url) await loadPlaylistFromUrl(pl.url);
-    else if (pl.path) await loadPlaylistFromFile(pl.path);
-    else if (pl.content) {
-      const channels = parseM3U(pl.content);
-      allChannels = channels;
-      renderPlaylistSelect();
-      updateCounts();
-      switchView('categories');
-      toast(`已加载 ${channels.length} 个频道`, 'success');
-    }
-  });
+  document.getElementById('playlist-select').addEventListener('change', (e) => selectPlaylist(e.target.value));
+  document.getElementById('settings-playlist-select').addEventListener('change', (e) => selectPlaylist(e.target.value));
 
   document.getElementById('btn-collapse').addEventListener('click', () => toggleSidebar(true));
   document.getElementById('btn-expand').addEventListener('click', () => toggleSidebar(false));
-  document.getElementById('scrim').addEventListener('click', () => toggleSidebar(true));
+  document.getElementById('scrim').addEventListener('click', () => {
+    setFullscreenMenu(false);
+    toggleSidebar(true);
+  });
 
   document.getElementById('btn-settings').addEventListener('click', openSettingsModal);
   document.getElementById('btn-mobile-settings').addEventListener('click', openSettingsModal);
@@ -847,13 +1121,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (currentChannel) toggleFavorite(currentChannel.id);
   });
 
-  document.getElementById('btn-fullscreen').addEventListener('click', () => {
-    toggleFullscreen();
-  });
-  document.getElementById('btn-video-fullscreen').addEventListener('click', toggleFullscreen);
-  document.getElementById('video-container').addEventListener('dblclick', (e) => {
-    if (e.target.closest('button')) return;
-    toggleFullscreen();
+  document.getElementById('btn-fullscreen').addEventListener('click', toggleFullscreen);
+  document.addEventListener('fullscreenchange', () => {
+    if (nativeFullscreenActive && !document.fullscreenElement) exitFullscreenMode();
   });
 
   document.getElementById('btn-add-playlist').addEventListener('click', openSettingsModal);
@@ -873,7 +1143,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (e.key === 'Escape') {
       document.getElementById('settings-modal').classList.add('hidden');
-      if (document.fullscreenElement) document.exitFullscreen();
+      exitFullscreenMode();
     }
     if (e.key.toLowerCase() === 'f' && document.activeElement.tagName !== 'INPUT') {
       e.preventDefault();

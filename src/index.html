@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>IPTV Player</title>
     <link rel="stylesheet" href="styles.css" />
+    <script src="vendor/hls.min.js" defer></script>
     <script type="module" src="/main.js" defer></script>
   </head>
   <body>
@@ -106,10 +107,67 @@
         </button>
 
         <div id="video-container">
-          <button id="btn-video-fullscreen" class="video-overlay-btn" title="全屏">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M16 3h3a2 2 0 0 1 2 2v3"/><path d="M8 21H5a2 2 0 0 1-2-2v-3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
-          </button>
-          <video id="video-player" controls playsinline></video>
+          <video id="video-player" playsinline></video>
+
+          <!-- Custom player UI -->
+          <div id="player-ui">
+            <div class="pu-controls">
+              <div class="pu-shade pu-shade-top"></div>
+              <div class="pu-shade pu-shade-bottom"></div>
+
+              <div class="pu-top">
+                <button id="pu-back" class="pu-btn pu-btn-sm" title="退出全屏">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                </button>
+                <div class="pu-title">
+                  <strong id="pu-title-name">未选择频道</strong>
+                  <span id="pu-title-group"></span>
+                </div>
+                <span id="pu-live" class="pu-live-badge hidden"><i></i>LIVE</span>
+              </div>
+
+              <div class="pu-center">
+                <button id="pu-prev" class="pu-btn pu-skip" title="上一个频道">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="19 20 9 12 19 4 19 20" fill="currentColor" stroke="none"/><line x1="5" y1="19" x2="5" y2="5"/></svg>
+                </button>
+                <button id="pu-play" class="pu-btn pu-play" title="播放 / 暂停">
+                  <svg class="pu-icon-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.54.84l10.2-6.5a1 1 0 0 0 0-1.68L9.54 4.66A1 1 0 0 0 8 5.5z"/></svg>
+                  <svg class="pu-icon-pause" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4.5" width="4.2" height="15" rx="1.4"/><rect x="13.8" y="4.5" width="4.2" height="15" rx="1.4"/></svg>
+                </button>
+                <button id="pu-next" class="pu-btn pu-skip" title="下一个频道">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4" fill="currentColor" stroke="none"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
+                </button>
+              </div>
+
+              <div class="pu-bottom">
+                <div id="pu-seek-row" class="pu-seek-row hidden">
+                  <span id="pu-time-cur">00:00</span>
+                  <input id="pu-seek" type="range" min="0" max="1000" value="0" />
+                  <span id="pu-time-dur">00:00</span>
+                </div>
+                <div class="pu-actions">
+                  <button id="pu-mute" class="pu-btn pu-btn-sm" title="静音">
+                    <svg class="pu-icon-vol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6.5 9H3v6h3.5L11 19V5z" fill="currentColor" stroke="none"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>
+                    <svg class="pu-icon-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6.5 9H3v6h3.5L11 19V5z" fill="currentColor" stroke="none"/><line x1="22" y1="9" x2="16" y2="15"/><line x1="16" y1="9" x2="22" y2="15"/></svg>
+                  </button>
+                  <input id="pu-volume" type="range" min="0" max="100" value="100" title="音量" />
+                  <div class="pu-flex"></div>
+                  <button id="pu-channels" class="pu-btn pu-btn-sm" title="频道列表">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1" fill="currentColor"/><circle cx="4" cy="12" r="1" fill="currentColor"/><circle cx="4" cy="18" r="1" fill="currentColor"/></svg>
+                  </button>
+                  <button id="pu-fullscreen" class="pu-btn pu-btn-sm" title="全屏">
+                    <svg class="pu-icon-max" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M16 3h3a2 2 0 0 1 2 2v3"/><path d="M8 21H5a2 2 0 0 1-2-2v-3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+                    <svg class="pu-icon-min" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h3a2 2 0 0 0 2-2V3"/><path d="M21 8h-3a2 2 0 0 1-2-2V3"/><path d="M3 16h3a2 2 0 0 1 2 2v3"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div id="pu-buffering" class="hidden">
+              <div class="pu-spinner"></div>
+            </div>
+          </div>
+
           <div id="no-channel-placeholder">
             <div class="placeholder-glow"></div>
             <div class="placeholder-icon">
@@ -154,6 +212,12 @@
           </button>
         </div>
         <div class="modal-body">
+          <div class="setting-group">
+            <label>播放源</label>
+            <select id="settings-playlist-select" class="settings-select">
+              <option value="">选择播放列表</option>
+            </select>
+          </div>
           <div class="setting-group">
             <label>添加播放列表 (M3U / M3U8 URL)</label>
             <div class="input-row">
